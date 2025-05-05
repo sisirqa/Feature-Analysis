@@ -13,7 +13,6 @@ export default function ResultsPage() {
           <Link href="/">
             <Button variant="outline">Back to Input</Button>
           </Link>
-          <Button variant="secondary">Export Report</Button>
         </div>
         <Card>
           <CardContent className="pt-6">
