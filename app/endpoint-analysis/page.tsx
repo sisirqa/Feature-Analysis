@@ -9,62 +9,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, Upload, AlertCircle, ArrowLeft } from "lucide-react"
+import { Loader2, Upload, AlertCircle, ArrowLeft, FileUp } from "lucide-react"
 import Header from "@/components/header"
 import EndpointStatisticsTable from "@/components/endpoint-statistics-table"
 import EndpointHourlyDistribution from "@/components/endpoint-hourly-distribution"
 import EndpointDailyTrend from "@/components/endpoint-daily-trend"
 import EndpointDropFrequency from "@/components/endpoint-drop-frequency"
-import { generateSampleLogs, type LogEntry } from "@/services/log-analysis-service"
+import EndpointDetailedReport from "@/components/endpoint-detailed-report"
+import type { LogEntry } from "@/services/log-analysis-service"
 
 export default function EndpointAnalysisPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [selectedEndpoint, setSelectedEndpoint] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isUsingUploadedData, setIsUsingUploadedData] = useState(false)
+  const [showDetailedReport, setShowDetailedReport] = useState(false)
 
   // Get endpoint from URL if provided
   const endpointParam = searchParams.get("endpoint")
 
   useEffect(() => {
-    // Load sample logs for demonstration
-    const sampleLogs = generateSampleLogs(30, 500)
-    setLogs(sampleLogs)
-
-    // Set selected endpoint from URL or use the most frequent endpoint
-    if (endpointParam) {
+    // Set selected endpoint from URL if provided
+    if (endpointParam && logs.length > 0) {
       setSelectedEndpoint(endpointParam)
-    } else {
-      // Find the most frequent endpoint
-      const endpointCounts = new Map<string, number>()
-      sampleLogs.forEach((log) => {
-        const endpoint = log.endpoint
-        endpointCounts.set(endpoint, (endpointCounts.get(endpoint) || 0) + 1)
-      })
-
-      let maxCount = 0
-      let mostFrequentEndpoint = ""
-
-      endpointCounts.forEach((count, endpoint) => {
-        if (count > maxCount) {
-          maxCount = count
-          mostFrequentEndpoint = endpoint
-        }
-      })
-
-      setSelectedEndpoint(mostFrequentEndpoint)
     }
-
-    setIsLoading(false)
-  }, [endpointParam])
+  }, [endpointParam, logs])
 
   const handleEndpointSelect = (endpoint: string) => {
     setSelectedEndpoint(endpoint)
+    setShowDetailedReport(false)
 
     // Update URL without refreshing the page
     const url = new URL(window.location.href)
@@ -93,6 +70,8 @@ export default function EndpointAnalysisPage() {
 
     setIsUploading(true)
     setError(null)
+    setSelectedEndpoint("")
+    setShowDetailedReport(false)
 
     try {
       const formData = new FormData()
@@ -141,7 +120,6 @@ export default function EndpointAnalysisPage() {
         })
 
         setLogs(transformedLogs)
-        setIsUsingUploadedData(true)
 
         // Find the most frequent endpoint in the uploaded data
         if (transformedLogs.length > 0) {
@@ -173,19 +151,8 @@ export default function EndpointAnalysisPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <h2 className="text-xl font-bold mb-4">Loading API Endpoint Analysis...</h2>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
+  const handleShowDetailedReport = () => {
+    setShowDetailedReport(true)
   }
 
   return (
@@ -201,9 +168,7 @@ export default function EndpointAnalysisPage() {
             <div>
               <h1 className="text-3xl font-bold">API Endpoint Analysis</h1>
               <p className="text-muted-foreground mt-2">
-                {isUsingUploadedData
-                  ? "Analysis based on your uploaded API logs"
-                  : "Analyze API endpoint usage patterns to identify high-value enhancement opportunities"}
+                Analyze API endpoint usage patterns to identify high-value enhancement opportunities
               </p>
             </div>
           </div>
@@ -249,13 +214,13 @@ export default function EndpointAnalysisPage() {
               </Alert>
             )}
 
-            {file && !isUploading && !error && !isUsingUploadedData && (
+            {file && !isUploading && !error && logs.length === 0 && (
               <div className="text-sm mt-4">
                 Selected file: <span className="font-medium">{file.name}</span> ({(file.size / 1024).toFixed(2)} KB)
               </div>
             )}
 
-            {isUsingUploadedData && (
+            {logs.length > 0 && (
               <Alert className="mt-4 bg-green-50 border-green-200">
                 <AlertDescription>
                   Successfully analyzed data from {file?.name}. Showing results based on your uploaded logs.
@@ -265,32 +230,62 @@ export default function EndpointAnalysisPage() {
           </CardContent>
         </Card>
 
-        <EndpointStatisticsTable logs={logs} daysInSample={30} onEndpointSelect={handleEndpointSelect} />
+        {logs.length === 0 ? (
+          <Card className="p-8 text-center">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <FileUp className="h-16 w-16 text-muted-foreground" />
+              <h2 className="text-2xl font-bold">No Data Available</h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Please upload a CSV file containing API logs to view endpoint statistics and analysis.
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <>
+            <EndpointStatisticsTable logs={logs} daysInSample={30} onEndpointSelect={handleEndpointSelect} />
 
-        {selectedEndpoint && (
-          <div className="mt-6">
-            <h2 className="text-2xl font-bold mb-4">Detailed Analysis: {selectedEndpoint}</h2>
+            {selectedEndpoint && !showDetailedReport && (
+              <div className="mt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold">Endpoint Analysis: {selectedEndpoint}</h2>
+                  <Button onClick={handleShowDetailedReport}>Generate Detailed Report</Button>
+                </div>
 
-            <Tabs defaultValue="hourly" className="mt-4">
-              <TabsList className="grid grid-cols-3 mb-4">
-                <TabsTrigger value="hourly">Hourly Distribution</TabsTrigger>
-                <TabsTrigger value="daily">Daily Trend</TabsTrigger>
-                <TabsTrigger value="drop">Drop Frequency</TabsTrigger>
-              </TabsList>
+                <Tabs defaultValue="hourly" className="mt-4">
+                  <TabsList className="grid grid-cols-3 mb-4">
+                    <TabsTrigger value="hourly">Hourly Distribution</TabsTrigger>
+                    <TabsTrigger value="daily">Daily Trend</TabsTrigger>
+                    <TabsTrigger value="drop">Drop Frequency</TabsTrigger>
+                  </TabsList>
 
-              <TabsContent value="hourly">
-                <EndpointHourlyDistribution logs={logs} endpoint={selectedEndpoint} />
-              </TabsContent>
+                  <TabsContent value="hourly">
+                    <EndpointHourlyDistribution logs={logs} endpoint={selectedEndpoint} />
+                  </TabsContent>
 
-              <TabsContent value="daily">
-                <EndpointDailyTrend logs={logs} endpoint={selectedEndpoint} days={30} />
-              </TabsContent>
+                  <TabsContent value="daily">
+                    <EndpointDailyTrend logs={logs} endpoint={selectedEndpoint} days={30} />
+                  </TabsContent>
 
-              <TabsContent value="drop">
-                <EndpointDropFrequency logs={logs} endpoint={selectedEndpoint} />
-              </TabsContent>
-            </Tabs>
-          </div>
+                  <TabsContent value="drop">
+                    <EndpointDropFrequency logs={logs} endpoint={selectedEndpoint} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+
+            {selectedEndpoint && showDetailedReport && (
+              <div className="mt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Button variant="outline" onClick={() => setShowDetailedReport(false)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Analysis
+                  </Button>
+                  <h2 className="text-2xl font-bold">Detailed Report: {selectedEndpoint}</h2>
+                </div>
+                <EndpointDetailedReport logs={logs} endpoint={selectedEndpoint} />
+              </div>
+            )}
+          </>
         )}
       </main>
       <footer className="border-t py-4">
