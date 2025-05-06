@@ -238,9 +238,14 @@ export default function InputForm() {
       />
 
       <div className="flex justify-between mt-6">
-        <Button variant="secondary" onClick={loadSampleData}>
-          Load Sample Data
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={loadSampleData}>
+            Load Sample Data
+          </Button>
+          <Button variant="outline" onClick={() => router.push("/log-analysis")}>
+            Access Log Analysis
+          </Button>
+        </div>
         <Button onClick={handleAnalyze} disabled={!isFormValid() || isAnalyzing}>
           {isAnalyzing ? (
             <>
