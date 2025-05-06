@@ -2,10 +2,36 @@ import { type NextRequest, NextResponse } from "next/server"
 import { parse } from "csv-parse/sync"
 import type { LogEntry } from "@/services/log-analysis-service"
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const file = formData.get("file") as File
+    // Check if the request is a FormData request
+    const contentType = request.headers.get("content-type") || ""
+
+    if (!contentType.includes("multipart/form-data")) {
+      return NextResponse.json({ error: "Request must be multipart/form-data" }, { status: 400 })
+    }
+
+    // Parse the form data
+    let formData: FormData
+    try {
+      formData = await request.formData()
+    } catch (error) {
+      console.error("Error parsing form data:", error)
+      return NextResponse.json(
+        { error: "Failed to parse form data", details: (error as Error).message },
+        { status: 400 },
+      )
+    }
+
+    const file = formData.get("file") as File | null
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -17,14 +43,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Read file content
-    const fileContent = await file.text()
+    let fileContent: string
+    try {
+      fileContent = await file.text()
+    } catch (error) {
+      console.error("Error reading file content:", error)
+      return NextResponse.json(
+        { error: "Failed to read file content", details: (error as Error).message },
+        { status: 400 },
+      )
+    }
 
     // Parse CSV
-    const records = parse(fileContent, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-    })
+    let records: any[]
+    try {
+      records = parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        relax_column_count: true, // Allow varying column counts
+        skip_records_with_error: true, // Skip records with errors
+      })
+    } catch (error) {
+      console.error("Error parsing CSV:", error)
+      return NextResponse.json(
+        { error: "Failed to parse CSV file", details: (error as Error).message },
+        { status: 400 },
+      )
+    }
 
     // Check if we have any records
     if (!records || !records.length) {
@@ -44,20 +90,40 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Transform records to LogEntry format
-    const logs: LogEntry[] = records.map((record: any) => ({
-      timestamp: record.createdAt || new Date().toISOString(),
-      ip: record.ip || "unknown",
-      endpoint: record.requestEndPoint || "unknown",
-      statusCode: Number.parseInt(record.responseCode, 10) || 0,
-      responseTime: Number.parseInt(record.responseTime, 10) || 0,
-      userAgent: record.userAgent || "",
-      method: record.method || "GET",
-      username: record.username || "",
-      deviceId: record.deviceId || "",
-      requestBody: record.requestBody || "",
-      responseBody: record.responseBody || "",
-    }))
+    // Transform records to LogEntry format with error handling for each record
+    const logs: LogEntry[] = []
+
+    for (const record of records) {
+      try {
+        // Determine the endpoint field name (could be requestEndPoint, request_path, url, etc.)
+        const endpoint =
+          record.requestEndPoint || record.request_path || record.url || record.endpoint || record.path || "unknown"
+
+        // Determine the status code field name
+        const statusCode = Number.parseInt(record.responseCode || record.status_code || record.status || "200", 10)
+
+        // Determine the response time field name
+        const responseTime = Number.parseInt(record.responseTime || record.response_time || record.duration || "0", 10)
+
+        // Create the log entry with flexible field mapping
+        logs.push({
+          timestamp: record.createdAt || record.timestamp || record.created_at || new Date().toISOString(),
+          ip: record.ip || record.public_ip || record.clientIp || "unknown",
+          endpoint,
+          statusCode: isNaN(statusCode) ? 200 : statusCode,
+          responseTime: isNaN(responseTime) ? 0 : responseTime,
+          userAgent: record.userAgent || record.user_agent || "",
+          method: record.method || record.request_method || "GET",
+          username: record.username || record.user || "",
+          deviceId: record.deviceId || record.device_id || "",
+          requestBody: record.requestBody || record.request_body || "",
+          responseBody: record.responseBody || record.response_body || "",
+        })
+      } catch (error) {
+        console.error("Error processing record:", error, record)
+        // Skip this record and continue with the next one
+      }
+    }
 
     // Analyze logs
     const analysis = analyzeApiLogs(logs)
@@ -70,7 +136,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error processing CSV:", error)
     return NextResponse.json(
-      { error: "Failed to process CSV file", details: (error as Error).message },
+      {
+        error: "Failed to process CSV file",
+        details: (error as Error).message,
+        success: false,
+      },
       { status: 500 },
     )
   }
