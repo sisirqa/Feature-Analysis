@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
+import { Loader2, BarChart2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -242,8 +242,13 @@ export default function InputForm() {
           <Button variant="secondary" onClick={loadSampleData}>
             Load Sample Data
           </Button>
-          <Button variant="outline" onClick={() => router.push("/log-analysis")}>
-            Access Log Analysis
+          <Button
+            variant="outline"
+            onClick={() => router.push("/endpoint-analysis")}
+            className="flex items-center gap-2"
+          >
+            <BarChart2 className="h-4 w-4" />
+            API Endpoint Analysis
           </Button>
         </div>
         <Button onClick={handleAnalyze} disabled={!isFormValid() || isAnalyzing}>

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
 
-export default function LogAnalysisPage() {
+export default function LogUploadPage() {
   redirect("/endpoint-analysis")
 }

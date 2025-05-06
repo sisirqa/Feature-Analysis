@@ -60,7 +60,8 @@
     "zod": "^3.24.1",
     "jspdf": "latest",
     "chart.js": "latest",
-    "jspdf-autotable": "latest"
+    "jspdf-autotable": "latest",
+    "csv-parse": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
