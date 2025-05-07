@@ -80,23 +80,14 @@ export default function LogUploadForm() {
         body: formData,
       })
 
-      // Check if the response is JSON
-      const contentType = response.headers.get("content-type")
-      if (!contentType || !contentType.includes("application/json")) {
-        // If not JSON, get the text and show it as an error
-        const text = await response.text()
-        throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}...`)
-      }
-
       const result = await response.json()
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || result.message || "Failed to upload file")
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to upload file")
       }
 
       setUploadResult(result)
     } catch (err) {
-      console.error("Upload error:", err)
       setError(`Upload failed: ${(err as Error).message}`)
     } finally {
       setIsUploading(false)
@@ -199,58 +190,56 @@ export default function LogUploadForm() {
             </CardContent>
           </Card>
 
-          {uploadResult.analysis.topEndpoints.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Endpoints by Usage</CardTitle>
-                <CardDescription>The most frequently accessed API endpoints</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 px-4">Endpoint</th>
-                        <th className="text-left py-2 px-4">Count</th>
-                        <th className="text-left py-2 px-4">% of Total</th>
-                        <th className="text-left py-2 px-4">Avg Response Time</th>
-                        <th className="text-left py-2 px-4">Success Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {uploadResult.analysis.topEndpoints.map((endpoint, index) => (
-                        <tr key={index} className="border-b hover:bg-muted/50">
-                          <td className="py-2 px-4 font-medium">{endpoint.endpoint}</td>
-                          <td className="py-2 px-4">{endpoint.count.toLocaleString()}</td>
-                          <td className="py-2 px-4">
-                            {((endpoint.count / uploadResult.analysis.totalRequests) * 100).toFixed(2)}%
-                          </td>
-                          <td className="py-2 px-4">{(endpoint.avgResponseTime || 0).toFixed(2)} ms</td>
-                          <td className="py-2 px-4">
-                            <div className="flex items-center">
-                              <div className="w-full bg-secondary rounded-full h-2.5 mr-2 max-w-24">
-                                <div
-                                  className={`h-2.5 rounded-full ${
-                                    endpoint.successRate > 95
-                                      ? "bg-green-500"
-                                      : endpoint.successRate > 80
-                                        ? "bg-yellow-500"
-                                        : "bg-red-500"
-                                  }`}
-                                  style={{ width: `${endpoint.successRate || 0}%` }}
-                                ></div>
-                              </div>
-                              <span>{(endpoint.successRate || 0).toFixed(1)}%</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Endpoints by Usage</CardTitle>
+              <CardDescription>The most frequently accessed API endpoints</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-4">Endpoint</th>
+                      <th className="text-left py-2 px-4">Count</th>
+                      <th className="text-left py-2 px-4">% of Total</th>
+                      <th className="text-left py-2 px-4">Avg Response Time</th>
+                      <th className="text-left py-2 px-4">Success Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {uploadResult.analysis.topEndpoints.map((endpoint, index) => (
+                      <tr key={index} className="border-b hover:bg-muted/50">
+                        <td className="py-2 px-4 font-medium">{endpoint.endpoint}</td>
+                        <td className="py-2 px-4">{endpoint.count.toLocaleString()}</td>
+                        <td className="py-2 px-4">
+                          {((endpoint.count / uploadResult.analysis.totalRequests) * 100).toFixed(2)}%
+                        </td>
+                        <td className="py-2 px-4">{(endpoint.avgResponseTime || 0).toFixed(2)} ms</td>
+                        <td className="py-2 px-4">
+                          <div className="flex items-center">
+                            <div className="w-full bg-secondary rounded-full h-2.5 mr-2 max-w-24">
+                              <div
+                                className={`h-2.5 rounded-full ${
+                                  endpoint.successRate > 95
+                                    ? "bg-green-500"
+                                    : endpoint.successRate > 80
+                                      ? "bg-yellow-500"
+                                      : "bg-red-500"
+                                }`}
+                                style={{ width: `${endpoint.successRate || 0}%` }}
+                              ></div>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                            <span>{(endpoint.successRate || 0).toFixed(1)}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
