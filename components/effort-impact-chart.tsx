@@ -2,20 +2,23 @@
 
 import { useEffect, useRef } from "react"
 import { Chart, registerables } from "chart.js"
-import type { ChartData } from "@/types/report-types"
+import type { ChartData, FeatureReport } from "@/types/report-types"
 
 Chart.register(...registerables)
 
 interface EffortImpactChartProps {
-  data: ChartData[]
+  data?: ChartData[]
+  features?: FeatureReport[]
 }
 
-export default function EffortImpactChart({ data }: EffortImpactChartProps) {
+export default function EffortImpactChart({ data, features }: EffortImpactChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart | null>(null)
+  const hasRendered = useRef(false)
 
   useEffect(() => {
     if (!chartRef.current) return
+    if (hasRendered.current) return // Prevent re-rendering if already rendered
 
     // Destroy previous chart instance if it exists
     if (chartInstance.current) {
@@ -25,13 +28,35 @@ export default function EffortImpactChart({ data }: EffortImpactChartProps) {
     const ctx = chartRef.current.getContext("2d")
     if (!ctx) return
 
+    // Handle the case where data is undefined
+    let chartData: ChartData[] = []
+
+    if (data && data.length > 0) {
+      chartData = data
+    } else if (features && features.length > 0) {
+      // Convert features to chart data
+      chartData = features.map((feature) => ({
+        name: feature.name,
+        effort: feature.effort,
+        impact: feature.impact,
+      }))
+    } else {
+      // Render empty state
+      ctx.font = "16px Arial"
+      ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
+      ctx.textAlign = "center"
+      ctx.fillText("No data available", chartRef.current.width / 2, chartRef.current.height / 2)
+      hasRendered.current = true
+      return
+    }
+
     chartInstance.current = new Chart(ctx, {
       type: "scatter",
       data: {
         datasets: [
           {
             label: "Features",
-            data: data.map((item) => ({
+            data: chartData.map((item) => ({
               x: item.effort,
               y: item.impact,
             })),
@@ -75,7 +100,7 @@ export default function EffortImpactChart({ data }: EffortImpactChartProps) {
             callbacks: {
               label: (context) => {
                 const index = context.dataIndex
-                return `${data[index].name}: Impact ${data[index].impact}, Effort ${data[index].effort}`
+                return `${chartData[index].name}: Impact ${chartData[index].impact}, Effort ${chartData[index].effort}`
               },
             },
           },
@@ -106,12 +131,15 @@ export default function EffortImpactChart({ data }: EffortImpactChartProps) {
     ctx.lineTo(chartRef.current.width, chartRef.current.height / 2)
     ctx.stroke()
 
+    hasRendered.current = true
+
     return () => {
       if (chartInstance.current) {
         chartInstance.current.destroy()
+        hasRendered.current = false
       }
     }
-  }, [data])
+  }, [data, features])
 
   return (
     <div className="w-full h-[300px]">

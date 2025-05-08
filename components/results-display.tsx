@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Info, Download } from "lucide-react"
+import { Info, Download, BarChart2, ArrowRight } from "lucide-react"
+import Link from "next/link"
 import EffortImpactChart from "@/components/effort-impact-chart"
 import RiceScoreChart from "@/components/rice-score-chart"
 import RiskDistributionChart from "@/components/risk-distribution-chart"
@@ -22,13 +23,76 @@ export default function ResultsDisplay() {
     "Citypay is a digital payment platform that needs to implement several new features to enhance security, compliance, and user experience."
 
   const features: FeatureData[] = [
-    { name: "Browser Change OTP", reach: 8, impact: 8, confidence: 9, effort: 5, riceScore: 11.5 },
-    { name: "Vendor API - MYRA", reach: 7, impact: 9, confidence: 7, effort: 7, riceScore: 6.3 },
-    { name: "NRB Report Update", reach: 6, impact: 7, confidence: 8, effort: 6, riceScore: 5.6 },
-    { name: "Compliance Changes", reach: 9, impact: 9, confidence: 8, effort: 8, riceScore: 8.1 },
-    { name: "Password Reset Config", reach: 7, impact: 6, confidence: 9, effort: 4, riceScore: 9.5 },
-    { name: "Dynamic QR - Merchant", reach: 8, impact: 8, confidence: 7, effort: 6, riceScore: 7.5 },
-    { name: "Customer Onboarding Consent", reach: 6, impact: 5, confidence: 9, effort: 3, riceScore: 9.0 },
+    {
+      id: "1",
+      name: "Browser Change OTP",
+      description: "Agent portal - Similar feature as new device OTP for Customer.",
+      reach: 8,
+      impact: 8,
+      confidence: 9,
+      effort: 5,
+      riceScore: 11.5,
+    },
+    {
+      id: "2",
+      name: "Vendor API - MYRA",
+      description: "All the task and changes to be done on vendor api",
+      reach: 7,
+      impact: 9,
+      confidence: 7,
+      effort: 7,
+      riceScore: 6.3,
+    },
+    {
+      id: "3",
+      name: "NRB Report Update",
+      description: "Update NRB reports according to the provided excel format",
+      reach: 6,
+      impact: 7,
+      confidence: 8,
+      effort: 6,
+      riceScore: 5.6,
+    },
+    {
+      id: "4",
+      name: "Compliance Changes",
+      description: "This involves all the changes and features introduced to fulfill NRB compliance for citypay",
+      reach: 9,
+      impact: 9,
+      confidence: 8,
+      effort: 8,
+      riceScore: 8.1,
+    },
+    {
+      id: "5",
+      name: "Password Reset Config",
+      description: "Admin should be able to manage the configuration of password reset from the CMS",
+      reach: 7,
+      impact: 6,
+      confidence: 9,
+      effort: 4,
+      riceScore: 9.5,
+    },
+    {
+      id: "6",
+      name: "Dynamic QR - Merchant",
+      description: "Merchants should now be able to generate the dynamic QR",
+      reach: 8,
+      impact: 8,
+      confidence: 7,
+      effort: 6,
+      riceScore: 7.5,
+    },
+    {
+      id: "7",
+      name: "Customer Onboarding Consent",
+      description: "Implement consent form during customer onboarding process",
+      reach: 6,
+      impact: 5,
+      confidence: 9,
+      effort: 3,
+      riceScore: 9.0,
+    },
   ]
 
   const chartData: ChartData[] = [
@@ -92,6 +156,42 @@ export default function ResultsDisplay() {
     { name: "User Experience", duration: "2 weeks", deliverables: "Password reset, consent workflows" },
     { name: "QR Payment Features", duration: "3 weeks", deliverables: "Dynamic QR, payment processing" },
     { name: "Testing & Deployment", duration: "2 weeks", deliverables: "QA, security testing, rollout" },
+  ]
+
+  // API impact data
+  const apiImpactData = [
+    {
+      feature: "Browser Change OTP",
+      endpoints: [
+        { endpoint: "/api/auth/otp", impact: "High", currentLoad: "5,200 req/day" },
+        { endpoint: "/api/users/verify", impact: "Medium", currentLoad: "3,100 req/day" },
+      ],
+      overallImpact: "High",
+    },
+    {
+      feature: "Vendor API - MYRA",
+      endpoints: [
+        { endpoint: "/api/vendors/myra", impact: "High", currentLoad: "1,800 req/day" },
+        { endpoint: "/api/transactions", impact: "Medium", currentLoad: "12,500 req/day" },
+      ],
+      overallImpact: "High",
+    },
+    {
+      feature: "Password Reset Config",
+      endpoints: [
+        { endpoint: "/api/auth/reset-password", impact: "High", currentLoad: "950 req/day" },
+        { endpoint: "/api/admin/settings", impact: "Medium", currentLoad: "320 req/day" },
+      ],
+      overallImpact: "Medium",
+    },
+    {
+      feature: "Dynamic QR - Merchant",
+      endpoints: [
+        { endpoint: "/api/qr/generate", impact: "High", currentLoad: "4,100 req/day" },
+        { endpoint: "/api/merchants", impact: "Low", currentLoad: "1,200 req/day" },
+      ],
+      overallImpact: "Medium",
+    },
   ]
 
   const handleExportPDF = () => {
@@ -169,12 +269,13 @@ export default function ResultsDisplay() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="summary" className="mt-6">
-        <TabsList className="grid grid-cols-5 mb-4">
+      <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="mt-6">
+        <TabsList className="grid grid-cols-6 mb-4">
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="features">Features</TabsTrigger>
           <TabsTrigger value="risks">Risks</TabsTrigger>
           <TabsTrigger value="impact">Impact</TabsTrigger>
+          <TabsTrigger value="api-impact">API Impact</TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
 
@@ -277,11 +378,11 @@ export default function ResultsDisplay() {
                   <EffortImpactChart data={chartData} />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  The Effort vs. Impact chart helps visualize the return on investment for each feature. Features in the
-                  top-left quadrant (Quick Wins) should be prioritized as they offer high impact with low effort.
-                  Password Reset Config and Customer Onboarding Consent are in the Quick Wins quadrant. Compliance
-                  Changes and Vendor API integration are in the Major Projects quadrant, indicating high impact but also
-                  high effort.
+                  The Effort vs. Impact chart helps visualize the return on investment for each feature component.
+                  Features in the top-left quadrant (Quick Wins) should be prioritized as they offer high impact with
+                  low effort. Password Reset Config and Customer Onboarding Consent are in the Quick Wins quadrant.
+                  Compliance Changes and Vendor API integration are in the Major Projects quadrant, indicating high
+                  impact but also high effort.
                 </p>
               </div>
             </CardContent>
@@ -428,44 +529,197 @@ export default function ResultsDisplay() {
               </div>
 
               <div className="border rounded-md p-4">
-                <h3 className="font-medium mb-2">DB Schema Changes</h3>
-                <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm">
-                  {`-- Add OTP verification table
-CREATE TABLE otp_verification (
-  id INT PRIMARY KEY,
-  user_id INT,
-  otp_code VARCHAR(10),
-  device_id VARCHAR(100),
-  browser_info TEXT,
-  created_at TIMESTAMP,
-  expires_at TIMESTAMP,
-  is_verified BOOLEAN DEFAULT FALSE,
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
+                <h3 className="font-medium mb-2">Implementation Timeline</h3>
+                <div className="border rounded-md p-4">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2">Phase</th>
+                        <th className="text-left py-2">Duration</th>
+                        <th className="text-left py-2">Key Deliverables</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timeline.map((phase, index) => (
+                        <tr key={index} className="border-b">
+                          <td className="py-2">{phase.name}</td>
+                          <td className="py-2">{phase.duration}</td>
+                          <td className="py-2">{phase.deliverables}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
--- Add compliance tracking table
-CREATE TABLE compliance_logs (
-  id INT PRIMARY KEY,
-  transaction_id INT,
-  compliance_type VARCHAR(50),
-  status VARCHAR(20),
-  details TEXT,
-  created_at TIMESTAMP,
-  FOREIGN KEY (transaction_id) REFERENCES transactions(id)
-);
+        <TabsContent value="api-impact" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>API Impact Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">
+                    This analysis identifies how the proposed features will impact existing API endpoints and provides
+                    recommendations for implementation.
+                  </p>
+                  <Link href="/endpoint-analysis">
+                    <Button className="flex items-center gap-2">
+                      <BarChart2 className="h-4 w-4" />
+                      <span>View API Analysis</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
 
--- Add QR code table
-CREATE TABLE qr_codes (
-  id INT PRIMARY KEY,
-  merchant_id INT,
-  qr_type VARCHAR(20),
-  amount DECIMAL(10,2),
-  reference_id VARCHAR(100),
-  status VARCHAR(20),
-  created_at TIMESTAMP,
-  expires_at TIMESTAMP
-);`}
-                </pre>
+                <div className="border rounded-md p-4">
+                  <h3 className="font-medium mb-4">Feature-to-API Impact Matrix</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2">Feature</th>
+                          <th className="text-left py-2">Affected Endpoints</th>
+                          <th className="text-left py-2">Current Load</th>
+                          <th className="text-left py-2">Impact Level</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {apiImpactData.map((item, index) => (
+                          <tr key={index} className="border-b">
+                            <td className="py-2 font-medium">{item.feature}</td>
+                            <td className="py-2">
+                              <div className="space-y-1">
+                                {item.endpoints.map((endpoint, i) => (
+                                  <div key={i}>{endpoint.endpoint}</div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-2">
+                              <div className="space-y-1">
+                                {item.endpoints.map((endpoint, i) => (
+                                  <div key={i}>{endpoint.currentLoad}</div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-2">
+                              <div className="space-y-1">
+                                {item.endpoints.map((endpoint, i) => (
+                                  <div key={i}>
+                                    <span
+                                      className={`inline-block px-2 py-1 rounded-full text-xs ${
+                                        endpoint.impact === "High"
+                                          ? "bg-red-100 text-red-800"
+                                          : endpoint.impact === "Medium"
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : "bg-green-100 text-green-800"
+                                      }`}
+                                    >
+                                      {endpoint.impact}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>High-Impact API Endpoints</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                            High
+                          </span>
+                          <div>
+                            <div className="font-medium">/api/auth/otp</div>
+                            <p className="text-sm text-muted-foreground">
+                              Currently handling 5,200 req/day. Browser Change OTP feature will significantly increase
+                              load.
+                            </p>
+                          </div>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                            High
+                          </span>
+                          <div>
+                            <div className="font-medium">/api/vendors/myra</div>
+                            <p className="text-sm text-muted-foreground">
+                              Currently handling 1,800 req/day. Vendor API integration will require significant changes.
+                            </p>
+                          </div>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                            High
+                          </span>
+                          <div>
+                            <div className="font-medium">/api/auth/reset-password</div>
+                            <p className="text-sm text-muted-foreground">
+                              Currently handling 950 req/day. Password Reset Config feature will modify core
+                              functionality.
+                            </p>
+                          </div>
+                        </li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>API Implementation Recommendations</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                          <div className="h-5 w-5 rounded-full bg-primary text-white flex items-center justify-center text-xs shrink-0">
+                            1
+                          </div>
+                          <p>
+                            Implement rate limiting on high-traffic endpoints to prevent abuse during feature rollout
+                          </p>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="h-5 w-5 rounded-full bg-primary text-white flex items-center justify-center text-xs shrink-0">
+                            2
+                          </div>
+                          <p>Add caching strategies for frequently accessed endpoints to improve performance</p>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="h-5 w-5 rounded-full bg-primary text-white flex items-center justify-center text-xs shrink-0">
+                            3
+                          </div>
+                          <p>Consider versioning APIs for backward compatibility during phased rollout</p>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="h-5 w-5 rounded-full bg-primary text-white flex items-center justify-center text-xs shrink-0">
+                            4
+                          </div>
+                          <p>Implement comprehensive monitoring and alerting for affected endpoints</p>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <div className="h-5 w-5 rounded-full bg-primary text-white flex items-center justify-center text-xs shrink-0">
+                            5
+                          </div>
+                          <p>Conduct load testing to ensure endpoints can handle increased traffic</p>
+                        </li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </CardContent>
           </Card>

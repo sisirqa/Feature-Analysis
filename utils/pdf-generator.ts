@@ -1,15 +1,8 @@
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
-import type { FeatureData, RiskData, ComponentData, TimelineData } from "@/types/report-types"
+import type { FeatureReport } from "@/types/report-types"
 
-export function generatePDF(
-  systemType: string,
-  clientDescription: string,
-  features: FeatureData[],
-  risks: RiskData[],
-  components: ComponentData[],
-  timeline: TimelineData[],
-) {
+export async function generatePDF(features: FeatureReport[]) {
   // Create a new PDF document
   const doc = new jsPDF({
     orientation: "portrait",
@@ -25,7 +18,7 @@ export function generatePDF(
   // Add subtitle with system type
   doc.setFontSize(12)
   doc.setFont("helvetica", "normal")
-  doc.text(`System: ${systemType}`, 105, 22, { align: "center" })
+  doc.text(`System: Feature Analysis`, 105, 22, { align: "center" })
 
   // Add date
   const today = new Date().toLocaleDateString()
@@ -39,8 +32,7 @@ export function generatePDF(
   doc.setFont("helvetica", "normal")
   doc.setFontSize(10)
 
-  const summaryText =
-    "The client has requested international transfer capabilities for their Digital Wallet system. This enhancement would require significant changes to the transaction processing system, database schema, and API endpoints. The feature has high business value but introduces moderate technical complexity and security considerations."
+  const summaryText = `This report provides an analysis of ${features.length} features. The features have been evaluated based on their RICE scores, effort, impact, and risk levels. The report includes recommendations for implementation prioritization.`
 
   const splitSummary = doc.splitTextToSize(summaryText, 180)
   doc.text(splitSummary, 14, 44)
@@ -56,6 +48,9 @@ export function generatePDF(
   const boxHeight = 20
   const gap = 10
 
+  // Calculate average RICE score
+  const avgRiceScore = features.reduce((sum, feature) => sum + feature.riceScore, 0) / features.length
+
   // Box 1
   doc.setDrawColor(200, 200, 200)
   doc.setFillColor(245, 245, 245)
@@ -63,7 +58,7 @@ export function generatePDF(
   doc.setFont("helvetica", "bold")
   doc.setFontSize(14)
   doc.setTextColor(41, 128, 185)
-  doc.text("8.9", 14 + boxWidth / 2, metricsY + 8, { align: "center" })
+  doc.text(avgRiceScore.toFixed(1), 14 + boxWidth / 2, metricsY + 8, { align: "center" })
   doc.setFontSize(8)
   doc.setTextColor(100, 100, 100)
   doc.text("Avg. RICE Score", 14 + boxWidth / 2, metricsY + 15, { align: "center" })
@@ -75,71 +70,59 @@ export function generatePDF(
   doc.setFont("helvetica", "bold")
   doc.setFontSize(14)
   doc.setTextColor(41, 128, 185)
-  doc.text("11", 14 + boxWidth + gap + boxWidth / 2, metricsY + 8, { align: "center" })
+  doc.text(features.length.toString(), 14 + boxWidth + gap + boxWidth / 2, metricsY + 8, { align: "center" })
   doc.setFontSize(8)
   doc.setTextColor(100, 100, 100)
-  doc.text("Weeks Timeline", 14 + boxWidth + gap + boxWidth / 2, metricsY + 15, { align: "center" })
+  doc.text("Total Features", 14 + boxWidth + gap + boxWidth / 2, metricsY + 15, { align: "center" })
 
   // Box 3
+  const highRiskCount = features.filter((f) => f.risk === "high").length
   doc.setDrawColor(200, 200, 200)
   doc.setFillColor(245, 245, 245)
   doc.roundedRect(14 + (boxWidth + gap) * 2, metricsY, boxWidth, boxHeight, 2, 2, "FD")
   doc.setFont("helvetica", "bold")
   doc.setFontSize(14)
   doc.setTextColor(41, 128, 185)
-  doc.text("4", 14 + (boxWidth + gap) * 2 + boxWidth / 2, metricsY + 8, { align: "center" })
+  doc.text(highRiskCount.toString(), 14 + (boxWidth + gap) * 2 + boxWidth / 2, metricsY + 8, { align: "center" })
   doc.setFontSize(8)
   doc.setTextColor(100, 100, 100)
-  doc.text("Major Components", 14 + (boxWidth + gap) * 2 + boxWidth / 2, metricsY + 15, { align: "center" })
+  doc.text("High Risk Features", 14 + (boxWidth + gap) * 2 + boxWidth / 2, metricsY + 15, { align: "center" })
 
   // Box 4
+  const avgComplexity = features.reduce((sum, feature) => sum + feature.complexity, 0) / features.length
   doc.setDrawColor(200, 200, 200)
   doc.setFillColor(245, 245, 245)
   doc.roundedRect(14 + (boxWidth + gap) * 3, metricsY, boxWidth, boxHeight, 2, 2, "FD")
   doc.setFont("helvetica", "bold")
   doc.setFontSize(14)
   doc.setTextColor(41, 128, 185)
-  doc.text("3", 14 + (boxWidth + gap) * 3 + boxWidth / 2, metricsY + 8, { align: "center" })
+  doc.text(avgComplexity.toFixed(1), 14 + (boxWidth + gap) * 3 + boxWidth / 2, metricsY + 8, { align: "center" })
   doc.setFontSize(8)
   doc.setTextColor(100, 100, 100)
-  doc.text("High Priority Features", 14 + (boxWidth + gap) * 3 + boxWidth / 2, metricsY + 15, { align: "center" })
+  doc.text("Avg. Complexity", 14 + (boxWidth + gap) * 3 + boxWidth / 2, metricsY + 15, { align: "center" })
 
   // Reset text color
   doc.setTextColor(0, 0, 0)
 
-  // Add client description
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("Client Request", 14, 95)
-  doc.setFont("helvetica", "normal")
-  doc.setFontSize(10)
-
-  const descriptionText =
-    clientDescription ||
-    "The client has requested adding international transfers with support for multiple currencies and real-time exchange rates to their Digital Wallet platform."
-
-  const splitDescription = doc.splitTextToSize(descriptionText, 180)
-  doc.text(splitDescription, 14, 101)
-
   // Add features table
   doc.setFontSize(12)
   doc.setFont("helvetica", "bold")
-  doc.text("Feature Analysis", 14, 115)
+  doc.text("Feature Analysis", 14, 95)
 
   autoTable(doc, {
-    startY: 120,
-    head: [["Feature", "Reach", "Impact", "Confidence", "Effort", "RICE Score"]],
+    startY: 100,
+    head: [["Feature", "RICE Score", "Effort", "Impact", "Risk", "Complexity"]],
     body: features.map((feature) => [
       feature.name,
-      feature.reach,
-      feature.impact,
-      feature.confidence,
+      feature.riceScore.toFixed(1),
       feature.effort,
-      feature.riceScore,
+      feature.impact,
+      feature.risk,
+      feature.complexity,
     ]),
     theme: "grid",
     headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-    margin: { top: 120 },
+    margin: { top: 100 },
   })
 
   // Add visual representation of feature prioritization
@@ -173,70 +156,34 @@ export function generatePDF(
 
     // Draw score
     doc.setFontSize(8)
-    doc.text(feature.riceScore.toString(), 70 + barWidth + 3, y + barHeight - 2)
-  })
-
-  // Add risks table
-  const risksY = barChartY + (barHeight + barGap) * sortedFeatures.length + 15
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("Risk Analysis", 14, risksY)
-
-  autoTable(doc, {
-    startY: risksY + 5,
-    head: [["Risk", "Severity", "Probability", "Mitigation"]],
-    body: risks.map((risk) => [risk.name, risk.severity, risk.probability, risk.mitigation]),
-    theme: "grid",
-    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-  })
-
-  // Add impact table
-  const impactY = doc.lastAutoTable?.finalY || 220
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("Impact Analysis", 14, impactY + 10)
-
-  autoTable(doc, {
-    startY: impactY + 15,
-    head: [["Component", "Impact Level", "Changes Required"]],
-    body: components.map((component) => [component.name, component.impactLevel, component.changes]),
-    theme: "grid",
-    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-  })
-
-  // Add timeline table
-  const timelineY = doc.lastAutoTable?.finalY || 260
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("Implementation Timeline", 14, timelineY + 10)
-
-  autoTable(doc, {
-    startY: timelineY + 15,
-    head: [["Phase", "Duration", "Key Deliverables"]],
-    body: timeline.map((phase) => [phase.name, phase.duration, phase.deliverables]),
-    theme: "grid",
-    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+    doc.text(feature.riceScore.toFixed(1), 70 + barWidth + 3, y + barHeight - 2)
   })
 
   // Add recommendations
-  const recommendationsY = doc.lastAutoTable?.finalY || 280
-  if (recommendationsY < 250) {
-    doc.setFontSize(12)
-    doc.setFont("helvetica", "bold")
-    doc.text("Recommendations", 14, recommendationsY + 10)
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(10)
+  const recommendationsY = barChartY + (barHeight + barGap) * sortedFeatures.length + 15
+  doc.setFontSize(12)
+  doc.setFont("helvetica", "bold")
+  doc.text("Recommendations", 14, recommendationsY)
+  doc.setFont("helvetica", "normal")
+  doc.setFontSize(10)
 
-    const recommendationsText =
-      "1. Implement database schema changes to support multiple currencies\n2. Integrate with a reliable exchange rate API for real-time rates\n3. Develop the backend API endpoints for international transfers\n4. Enhance security measures for international transactions"
+  const recommendationsText = `
+1. Prioritize features with high RICE scores and low effort
+2. Address high-risk features early in the development cycle
+3. Consider breaking down high-complexity features into smaller components
+4. Implement features with high business value first to demonstrate ROI
+5. Establish clear timelines based on feature complexity and dependencies
+  `
 
-    doc.text(recommendationsText, 14, recommendationsY + 16)
-  }
+  doc.text(recommendationsText, 14, recommendationsY + 6)
 
   // Add footer
   doc.setFontSize(8)
   doc.setTextColor(100)
   doc.text("Feature Analyzer Report - Confidential", 105, 285, { align: "center" })
+
+  // Save the PDF
+  doc.save("feature-analysis-report.pdf")
 
   return doc
 }

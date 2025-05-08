@@ -1,7 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileCheckIcon, BarChart3Icon, AlertTriangleIcon, ArrowRightIcon } from "lucide-react"
 
-export default function AppOverview() {
+interface AppOverviewProps {
+  features?: any[]
+}
+
+export default function AppOverview({ features = [] }: AppOverviewProps) {
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">

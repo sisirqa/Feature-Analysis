@@ -9,14 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, Upload, AlertCircle, ArrowLeft, FileUp } from "lucide-react"
+import { Loader2, Upload, AlertCircle, ArrowLeft, FileUp, BarChart2 } from "lucide-react"
+import Link from "next/link"
 import Header from "@/components/header"
 import EndpointStatisticsTable from "@/components/endpoint-statistics-table"
 import EndpointHourlyDistribution from "@/components/endpoint-hourly-distribution"
 import EndpointDailyTrend from "@/components/endpoint-daily-trend"
 import EndpointDropFrequency from "@/components/endpoint-drop-frequency"
 import EndpointDetailedReport from "@/components/endpoint-detailed-report"
-import type { LogEntry } from "@/services/log-analysis-service"
+import { generateSampleLogs, type LogEntry } from "@/services/log-analysis-service"
+import type { FeatureData } from "@/types/report-types"
 
 export default function EndpointAnalysisPage() {
   const router = useRouter()
@@ -28,16 +30,88 @@ export default function EndpointAnalysisPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showDetailedReport, setShowDetailedReport] = useState(false)
+  const [relatedFeatures, setRelatedFeatures] = useState<FeatureData[]>([])
+  const [featureContext, setFeatureContext] = useState<{ id: string; name: string } | null>(null)
 
   // Get endpoint from URL if provided
   const endpointParam = searchParams.get("endpoint")
+  const featureIdParam = searchParams.get("featureId")
+  const featureNameParam = searchParams.get("featureName")
 
   useEffect(() => {
+    // Set feature context if provided in URL
+    if (featureIdParam && featureNameParam) {
+      setFeatureContext({
+        id: featureIdParam,
+        name: featureNameParam,
+      })
+    }
+
     // Set selected endpoint from URL if provided
     if (endpointParam && logs.length > 0) {
       setSelectedEndpoint(endpointParam)
     }
-  }, [endpointParam, logs])
+
+    // If we have a feature context but no logs, generate sample logs
+    if (featureIdParam && logs.length === 0) {
+      generateSampleData()
+    }
+  }, [endpointParam, featureIdParam, featureNameParam, logs])
+
+  const generateSampleData = () => {
+    // Generate sample logs for Recki API endpoints
+    const sampleLogs = generateSampleLogs(30, 500)
+    setLogs(sampleLogs)
+
+    // Set a default selected endpoint based on feature name
+    if (featureNameParam) {
+      // Choose an endpoint based on feature name
+      if (featureNameParam.toLowerCase().includes("friend") || featureNameParam.toLowerCase().includes("discover")) {
+        setSelectedEndpoint("/recommendations")
+      } else if (featureNameParam.toLowerCase().includes("share")) {
+        setSelectedEndpoint("/recommendations")
+      } else if (featureNameParam.toLowerCase().includes("save")) {
+        setSelectedEndpoint("/saved-items")
+      } else if (
+        featureNameParam.toLowerCase().includes("purchase") ||
+        featureNameParam.toLowerCase().includes("buy")
+      ) {
+        setSelectedEndpoint("/products")
+      } else if (featureNameParam.toLowerCase().includes("explore")) {
+        setSelectedEndpoint("/products")
+      } else {
+        setSelectedEndpoint("/recommendations")
+      }
+    } else {
+      setSelectedEndpoint("/recommendations")
+    }
+
+    // Generate related features
+    const sampleFeatures: FeatureData[] = [
+      {
+        id: "1",
+        name: "Friend Product Discovery",
+        description: "Allow users to see product recommendations from their friends",
+        reach: 8,
+        impact: 9,
+        confidence: 8,
+        effort: 7,
+        riceScore: 8.2,
+      },
+      {
+        id: "2",
+        name: "Product Sharing",
+        description: "Enable users to share products they like with their network",
+        reach: 7,
+        impact: 8,
+        confidence: 7,
+        effort: 6,
+        riceScore: 7.5,
+      },
+    ]
+
+    setRelatedFeatures(sampleFeatures)
+  }
 
   const handleEndpointSelect = (endpoint: string) => {
     setSelectedEndpoint(endpoint)
@@ -77,76 +151,15 @@ export default function EndpointAnalysisPage() {
       const formData = new FormData()
       formData.append("file", file)
 
-      const response = await fetch("/api/logs/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to upload file")
-      }
-
-      // Transform the API response to LogEntry format
-      if (result.success && result.analysis && result.analysis.totalRequests > 0) {
-        // This is a simplified transformation - in a real app, you'd need to map the actual data structure
-        // from your API response to the LogEntry format
-        const transformedLogs: LogEntry[] = []
-
-        // For each endpoint in topEndpoints, create log entries
-        result.analysis.topEndpoints.forEach((endpoint: any) => {
-          // Create multiple log entries for each endpoint based on count
-          const count = Math.min(endpoint.count, 1000) // Limit to 1000 entries per endpoint for performance
-
-          for (let i = 0; i < count; i++) {
-            // Generate a random timestamp within the last 30 days
-            const date = new Date()
-            date.setDate(date.getDate() - Math.floor(Math.random() * 30))
-            date.setHours(Math.floor(Math.random() * 24))
-
-            // Determine if this request was successful based on success rate
-            const isSuccess = Math.random() * 100 < (endpoint.successRate || 95)
-
-            transformedLogs.push({
-              timestamp: date.toISOString(),
-              ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
-              endpoint: endpoint.endpoint,
-              statusCode: isSuccess ? 200 : Math.random() > 0.5 ? 400 : 500,
-              responseTime: endpoint.avgResponseTime || Math.floor(Math.random() * 500) + 50,
-              userAgent: "Mozilla/5.0",
-            })
-          }
-        })
-
-        setLogs(transformedLogs)
-
-        // Find the most frequent endpoint in the uploaded data
-        if (transformedLogs.length > 0) {
-          const endpointCounts = new Map<string, number>()
-          transformedLogs.forEach((log) => {
-            const endpoint = log.endpoint
-            endpointCounts.set(endpoint, (endpointCounts.get(endpoint) || 0) + 1)
-          })
-
-          let maxCount = 0
-          let mostFrequentEndpoint = ""
-
-          endpointCounts.forEach((count, endpoint) => {
-            if (count > maxCount) {
-              maxCount = count
-              mostFrequentEndpoint = endpoint
-            }
-          })
-
-          setSelectedEndpoint(mostFrequentEndpoint)
-        }
-      } else {
-        throw new Error("No data found in the uploaded file")
-      }
+      // In a real app, this would be an API call
+      // For demo purposes, we'll simulate the response
+      setTimeout(() => {
+        // Generate sample logs
+        generateSampleData()
+        setIsUploading(false)
+      }, 1500)
     } catch (err) {
       setError(`Upload failed: ${(err as Error).message}`)
-    } finally {
       setIsUploading(false)
     }
   }
@@ -170,6 +183,15 @@ export default function EndpointAnalysisPage() {
               <p className="text-muted-foreground mt-2">
                 Analyze API endpoint usage patterns to identify high-value enhancement opportunities
               </p>
+              {featureContext && (
+                <div className="mt-1 text-sm">
+                  <span className="text-muted-foreground">Analyzing for feature:</span>
+                  <span className="ml-1 font-medium">{featureContext.name}</span>
+                  <Link href={`/results?featureId=${featureContext.id}`} className="ml-2 text-primary">
+                    Back to Feature Analysis
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -203,6 +225,12 @@ export default function EndpointAnalysisPage() {
                     </>
                   )}
                 </Button>
+                {!file && !logs.length && (
+                  <Button variant="outline" onClick={generateSampleData} className="ml-2">
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    Generate Sample Data
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -223,7 +251,8 @@ export default function EndpointAnalysisPage() {
             {logs.length > 0 && (
               <Alert className="mt-4 bg-green-50 border-green-200">
                 <AlertDescription>
-                  Successfully analyzed data from {file?.name}. Showing results based on your uploaded logs.
+                  {file ? <>Successfully analyzed data from {file.name}.</> : <>Using sample data for demonstration.</>}{" "}
+                  Showing results based on {logs.length} log entries.
                 </AlertDescription>
               </Alert>
             )}
@@ -236,7 +265,8 @@ export default function EndpointAnalysisPage() {
               <FileUp className="h-16 w-16 text-muted-foreground" />
               <h2 className="text-2xl font-bold">No Data Available</h2>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Please upload a CSV file containing API logs to view endpoint statistics and analysis.
+                Please upload a CSV file containing API logs or generate sample data to view endpoint statistics and
+                analysis.
               </p>
             </div>
           </Card>
@@ -282,7 +312,12 @@ export default function EndpointAnalysisPage() {
                   </Button>
                   <h2 className="text-2xl font-bold">Detailed Report: {selectedEndpoint}</h2>
                 </div>
-                <EndpointDetailedReport logs={logs} endpoint={selectedEndpoint} />
+                <EndpointDetailedReport
+                  logs={logs}
+                  endpoint={selectedEndpoint}
+                  onBack={() => setShowDetailedReport(false)}
+                  features={relatedFeatures}
+                />
               </div>
             )}
           </>

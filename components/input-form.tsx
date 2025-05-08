@@ -6,11 +6,11 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, BarChart2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { Card, CardContent } from "@/components/ui/card"
 
 export default function InputForm() {
   const router = useRouter()
@@ -22,6 +22,7 @@ export default function InputForm() {
     userStories: "",
     apiDocs: "",
   })
+  const [loading, setLoading] = useState(false)
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -37,138 +38,252 @@ export default function InputForm() {
   }
 
   const loadSampleData = () => {
-    // Sample features from the feature list
-    const features = [
-      {
-        id: "1",
-        name: "Browser Change OTP",
-        details: "Agent portal - Similar feature as new device OTP for Customer.",
-      },
-      {
-        id: "2",
-        name: "Vendor API - MYRA",
-        details: "All the task and changes to be done on vendor api",
-      },
-      {
-        id: "3",
-        name: "NRB report update",
-        details:
-          "Update NRB reports according to the provided excel format Reports to be updated : Transaction Report Success/Failure Report Agent Report",
-      },
-      {
-        id: "4",
-        name: "Compliance Changes",
-        details: "This involves all the changes and features introduced to fulfill NRB compliance for citypay",
-      },
-      {
-        id: "5",
-        name: "Password Reset Config",
-        details:
-          "Admin should be able to manage the configuration of password reset from the CMS. This should be for both Agent portal and customer portal.",
-      },
-      {
-        id: "6",
-        name: "Dynamic QR - Merchant",
-        details: "Merchants should now be able to generate the dynamic QR.",
-      },
-      {
-        id: "7",
-        name: "Customer onboarding consent",
-        details: "Implement consent form during customer onboarding process",
-      },
-      {
-        id: "8",
-        name: "Two-Factor Authentication (2FA) for Admin Portal",
-        details: "Implement 2FA security for admin portal access",
-      },
-      {
-        id: "9",
-        name: "NCHL QR Code format",
-        details: "Implement NCHL QR code format standards",
-      },
-      {
-        id: "10",
-        name: "FonePay QR payment",
-        details: "Integrate FonePay QR payment system",
-      },
-    ]
-
-    // Format features as user stories
-    const userStories = features
-      .map((feature) => {
-        // Convert feature details to user story format
-        let story = `Feature: ${feature.name}\n`
-        story += `Description: ${feature.details}\n\n`
-
-        // Add user story format based on the feature
-        switch (feature.id) {
-          case "1":
-            story +=
-              "As an agent, I want to verify my identity when changing browsers so that my account remains secure.\n"
-            story += "Acceptance Criteria:\n"
-            story += "- System should detect when agent logs in from a new browser\n"
-            story += "- OTP should be sent to agent's registered mobile number\n"
-            story += "- Agent should be able to enter OTP to verify identity\n"
-            story += "- Session should be authorized after successful verification\n"
-            break
-          case "2":
-            story +=
-              "As a system administrator, I want to integrate with MYRA vendor API so that required services are available.\n"
-            story += "Acceptance Criteria:\n"
-            story += "- System should connect to MYRA API endpoints\n"
-            story += "- Authentication with MYRA services should be secure\n"
-            story += "- All required data should be exchanged correctly\n"
-            story += "- Error handling should be implemented for API failures\n"
-            break
-          case "3":
-            story += "As a compliance officer, I want updated NRB reports so that regulatory requirements are met.\n"
-            story += "Acceptance Criteria:\n"
-            story += "- Transaction Report format should match provided excel template\n"
-            story += "- Success/Failure Report should include all required fields\n"
-            story += "- Agent Report should be generated according to specifications\n"
-            story += "- Reports should be exportable in required formats\n"
-            break
-          case "4":
-            story +=
-              "As a compliance manager, I want NRB compliance features implemented so that citypay meets regulatory requirements.\n"
-            story += "Acceptance Criteria:\n"
-            story += "- All required compliance checks should be implemented\n"
-            story += "- Transaction monitoring should meet NRB guidelines\n"
-            story += "- Reporting mechanisms should be compliant with regulations\n"
-            story += "- Audit trail should be maintained for all compliance activities\n"
-            break
-          case "5":
-            story +=
-              "As an admin, I want to configure password reset options so that both agents and customers can securely reset passwords.\n"
-            story += "Acceptance Criteria:\n"
-            story += "- Admin should be able to set password complexity requirements\n"
-            story += "- Admin should be able to configure reset methods (email, SMS, etc.)\n"
-            story += "- Configuration should apply to both agent portal and customer portal\n"
-            story += "- Changes should be logged for audit purposes\n"
-            break
-          default:
-            story += `As a user, I want to use the ${feature.name} feature so that I can ${feature.details.toLowerCase()}\n`
-            story += "Acceptance Criteria:\n"
-            story += "- Feature should be accessible from the appropriate section\n"
-            story += "- Feature should perform as described in the requirements\n"
-            story += "- User should receive appropriate feedback when using the feature\n"
-            story += "- Feature should handle errors gracefully\n"
-        }
-
-        story += "\n---\n"
-        return story
-      })
-      .join("\n")
-
+    // Sample data for Recki - a social product recommendation platform
     setFormData({
-      systemType: "Citypay Payment Platform",
+      systemType: "Recki - Social Product Recommendation Platform",
       clientDescription:
-        "Citypay is a digital payment platform that needs to implement several new features to enhance security, compliance, and user experience.",
-      dbSchema:
-        "CREATE TABLE users (\n  id INT PRIMARY KEY,\n  name VARCHAR(100),\n  email VARCHAR(100),\n  phone VARCHAR(20),\n  role VARCHAR(50)\n);\n\nCREATE TABLE transactions (\n  id INT PRIMARY KEY,\n  user_id INT,\n  amount DECIMAL(10,2),\n  type VARCHAR(50),\n  status VARCHAR(20),\n  created_at TIMESTAMP,\n  FOREIGN KEY (user_id) REFERENCES users(id)\n);",
-      userStories: userStories,
-      apiDocs:
-        "openapi: 3.0.0\ninfo:\n  title: Citypay API\n  version: 1.0.0\npaths:\n  /auth/otp:\n    post:\n      summary: Send OTP for verification\n      requestBody:\n        content:\n          application/json:\n            schema:\n              type: object\n              properties:\n                userId:\n                  type: string\n                deviceId:\n                  type: string",
+        "Recki is a social product recommendation platform where users can discover products recommended by friends, share products they like, save items for later, and make purchases.",
+      userStories: `User Story 1: Discover Products from Friends
+
+ As a user, I want to see product recommendations from my friends so I can discover trusted items.
+
+Acceptance Criteria:
+
+ [ ] I can view a feed of products shared by friends.
+ [ ] Each product shows who recommended it.
+ [ ] I can click on a product to view more details.
+
+
+User Story 2: Share a Product I Like
+
+ As a user, I want to share a product I like so others can benefit from my recommendation.
+
+Acceptance Criteria:
+
+ [ ] I can search for a product to recommend.
+ [ ] I can add a personal comment or review.
+ [ ] I can post it to my profile/feed.
+
+
+### User Story 3: Save Products for Later
+
+ As a user, I want to save products to a list so I can buy them later.
+
+Acceptance Criteria:
+
+ [ ] I can add a product to a wishlist or buy list.
+ [ ] I can view all saved products in one place.
+ [ ] I can remove products from the list if needed.
+
+
+### User Story 4: Buy a Recommended Product
+
+As a user, I want to buy a product directly from Recki so I don't have to search for it elsewhere.
+Acceptance Criteria:
+ [ ] I can click a "Buy Now" or link button on product pages.
+[ ] I'm redirected to a purchase page or partner store.
+ [ ] The product info is clearly displayed before purchase.
+
+
+User Story 5: Explore New Recommendations
+
+ As a user, I want to explore popular or trending products to find new ideas.
+
+Acceptance Criteria:
+
+ [ ] There is a Discover or Explore section in the app.
+ [ ] I can browse by category (e.g., tech, fashion).
+ [ ] I can see who recommended each item.`,
+      apiDocs: `openapi: 3.0.0
+info:
+  title: Recki API
+  version: 1.0.0
+  description: API for social product recommendation platform - Recki
+
+servers:
+  - url: https://api.recki.com/v1
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '201':
+          description: User registered successfully
+
+  /auth/login:
+    post:
+      summary: Login user and return auth token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /products:
+    get:
+      summary: Get list of products
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /recommendations:
+    post:
+      summary: Create a new product recommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                productId:
+                  type: string
+                comment:
+                  type: string
+      responses:
+        '201':
+          description: Recommendation created
+
+    get:
+      summary: Get all recommendations
+      responses:
+        '200':
+          description: List of recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recommendation'
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        productUrl:
+          type: string
+        category:
+          type: string
+
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        productId:
+          type: string
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time`,
+      dbSchema: `-- 1. Users Table
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  full_name VARCHAR(100),
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  profile_picture TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Products Table
+CREATE TABLE products (
+  id UUID PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  product_url TEXT,
+  category VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Recommendations Table
+CREATE TABLE recommendations (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  comment TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Likes Table (users liking recommendations)
+CREATE TABLE likes (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  recommendation_id UUID REFERENCES recommendations(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, recommendation_id)
+);
+
+-- 5. Follows Table (users following other users)
+CREATE TABLE follows (
+  id UUID PRIMARY KEY,
+  follower_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  following_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (follower_id, following_id)
+);
+
+-- 6. Saved Items (Wishlist/Buy Later)
+CREATE TABLE saved_items (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, product_id)
+);`,
     })
   }
 
@@ -177,7 +292,93 @@ export default function InputForm() {
     // Simulate analysis process
     setTimeout(() => {
       setIsAnalyzing(false)
-      router.push("/results")
+
+      // Create feature reports based on the user stories
+      const features = [
+        {
+          id: "1",
+          name: "Friend Product Discovery",
+          description: "Allow users to see product recommendations from their friends",
+          effort: 7,
+          impact: 9,
+          confidence: 8,
+          riceScore: 72,
+          complexity: 6,
+          businessValue: 9,
+          risk: "medium",
+          timeline: 14,
+          dependencies: ["User Authentication", "Product Database"],
+          userStories: [
+            "As a user, I want to see product recommendations from my friends so I can discover trusted items.",
+          ],
+        },
+        {
+          id: "2",
+          name: "Product Sharing",
+          description: "Enable users to share products they like with their network",
+          effort: 5,
+          impact: 8,
+          confidence: 9,
+          riceScore: 86,
+          complexity: 5,
+          businessValue: 8,
+          risk: "low",
+          timeline: 10,
+          dependencies: ["Product Database"],
+          userStories: ["As a user, I want to share a product I like so others can benefit from my recommendation."],
+        },
+        {
+          id: "3",
+          name: "Save Products Feature",
+          description: "Allow users to save products to a wishlist for later purchase",
+          effort: 4,
+          impact: 7,
+          confidence: 9,
+          riceScore: 94,
+          complexity: 4,
+          businessValue: 7,
+          risk: "low",
+          timeline: 7,
+          dependencies: ["Product Database", "User Authentication"],
+          userStories: ["As a user, I want to save products to a list so I can buy them later."],
+        },
+        {
+          id: "4",
+          name: "Direct Purchase Integration",
+          description: "Enable users to buy products directly through the platform",
+          effort: 9,
+          impact: 10,
+          confidence: 7,
+          riceScore: 54,
+          complexity: 8,
+          businessValue: 10,
+          risk: "high",
+          timeline: 21,
+          dependencies: ["Product Database", "User Authentication", "Payment Processing"],
+          userStories: [
+            "As a user, I want to buy a product directly from Recki so I don't have to search for it elsewhere.",
+          ],
+        },
+        {
+          id: "5",
+          name: "Explore & Discovery",
+          description: "Provide a discovery section for users to find popular and trending products",
+          effort: 6,
+          impact: 8,
+          confidence: 8,
+          riceScore: 75,
+          complexity: 6,
+          businessValue: 8,
+          risk: "medium",
+          timeline: 12,
+          dependencies: ["Product Database", "Recommendation Engine"],
+          userStories: ["As a user, I want to explore popular or trending products to find new ideas."],
+        },
+      ]
+
+      // Encode and pass the features to the results page
+      const encodedFeatures = encodeURIComponent(JSON.stringify(features))
+      router.push(`/results?features=${encodedFeatures}`)
     }, 2000)
   }
 
@@ -185,12 +386,21 @@ export default function InputForm() {
     return formData.systemType.trim() !== "" && formData.clientDescription.trim() !== ""
   }
 
+  const handleLoadSampleData = () => {
+    setLoading(true)
+    // Simulate loading sample data
+    setTimeout(() => {
+      setLoading(false)
+      router.push("/results")
+    }, 1000)
+  }
+
   return (
     <div className="space-y-6">
       <InputSection
         label="System Type"
-        placeholder="Enter system type (e.g., Digital Wallet)"
-        tooltip="Describe the system (e.g., Digital Wallet or eCommerce Platform)"
+        placeholder="Enter system type (e.g., Social Product Recommendation Platform)"
+        tooltip="Describe the system (e.g., Social Product Recommendation Platform or E-commerce)"
         value={formData.systemType}
         onChange={(e) => handleInputChange("systemType", e.target.value)}
         onFileUpload={(file) => handleFileUpload("systemType", file)}
@@ -199,7 +409,7 @@ export default function InputForm() {
 
       <InputSection
         label="Client Description"
-        placeholder="Paste client description here (e.g., 'Add international transfers')..."
+        placeholder="Paste client description here (e.g., 'A platform where users can discover products recommended by friends')..."
         tooltip="Provide the client's desired features or enhancements"
         value={formData.clientDescription}
         onChange={(e) => handleInputChange("clientDescription", e.target.value)}
@@ -262,6 +472,13 @@ export default function InputForm() {
           )}
         </Button>
       </div>
+      <Card>
+        <CardContent className="pt-6">
+          <Button onClick={handleLoadSampleData} className="w-full" disabled={loading}>
+            {loading ? "Loading..." : "Load Sample Data"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }

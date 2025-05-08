@@ -1,27 +1,30 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileJson, FileText } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { FileJson, FileText, ArrowLeft, Lightbulb } from "lucide-react"
 import EndpointHourlyDistribution from "./endpoint-hourly-distribution"
 import EndpointDailyTrend from "./endpoint-daily-trend"
 import EndpointDropFrequency from "./endpoint-drop-frequency"
-import { Badge } from "./ui/badge"
+import type { FeatureData } from "@/types/report-types"
 
 interface EndpointDetailedReportProps {
   endpoint: string
   logs: any[]
   onBack: () => void
+  features?: FeatureData[]
 }
 
-export default function EndpointDetailedReport({ endpoint, logs, onBack }: EndpointDetailedReportProps) {
+export default function EndpointDetailedReport({ endpoint, logs, onBack, features }: EndpointDetailedReportProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [isPdfExporting, setIsPdfExporting] = useState(false)
+  const [relatedFeatures, setRelatedFeatures] = useState<FeatureData[]>([])
 
   // Filter logs for this endpoint
-  const endpointLogs = logs.filter((log) => log.request_path === endpoint || log.url === endpoint)
+  const endpointLogs = logs.filter((log) => log.endpoint === endpoint)
 
   // Calculate metrics
   const totalRequests = endpointLogs.length
@@ -48,6 +51,48 @@ export default function EndpointDetailedReport({ endpoint, logs, onBack }: Endpo
     .reduce((sum, [_, count]) => sum + count, 0)
   const successRate = (successRequests / totalRequests) * 100
 
+  useEffect(() => {
+    // If features are provided, find related features based on endpoint name
+    if (features && features.length > 0) {
+      // Simple keyword matching to find related features
+      const endpointKeywords = endpoint
+        .toLowerCase()
+        .split(/[/\-_]/)
+        .filter((k) => k.length > 3)
+
+      const related = features.filter((feature) => {
+        const featureKeywords = (feature.name + " " + (feature.description || "")).toLowerCase().split(/\s+/)
+        return endpointKeywords.some((ek) => featureKeywords.some((fk) => fk.includes(ek) || ek.includes(fk)))
+      })
+
+      setRelatedFeatures(related)
+    } else {
+      // Sample related features if none provided
+      setRelatedFeatures([
+        {
+          id: "1",
+          name: "Browser Change OTP",
+          description: "Agent portal - Similar feature as new device OTP for Customer.",
+          reach: 8,
+          impact: 8,
+          confidence: 9,
+          effort: 5,
+          riceScore: 11.5,
+        },
+        {
+          id: "5",
+          name: "Password Reset Config",
+          description: "Admin should be able to manage the configuration of password reset from the CMS.",
+          reach: 7,
+          impact: 6,
+          confidence: 9,
+          effort: 4,
+          riceScore: 9.5,
+        },
+      ])
+    }
+  }, [endpoint, features])
+
   // Export as JSON
   const handleExportJson = () => {
     setIsExporting(true)
@@ -62,6 +107,7 @@ export default function EndpointDetailedReport({ endpoint, logs, onBack }: Endpo
             avgResponseTime,
             successRate,
             statusCodeDistribution: statusCodeDist,
+            relatedFeatures: relatedFeatures.map((f) => f.name),
           },
           logs: endpointLogs,
         },
@@ -97,6 +143,7 @@ export default function EndpointDetailedReport({ endpoint, logs, onBack }: Endpo
         body: JSON.stringify({
           endpoint,
           logs: endpointLogs,
+          relatedFeatures: relatedFeatures,
         }),
       })
 
@@ -122,6 +169,7 @@ export default function EndpointDetailedReport({ endpoint, logs, onBack }: Endpo
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={onBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
         <div className="flex gap-2">
@@ -182,12 +230,13 @@ export default function EndpointDetailedReport({ endpoint, logs, onBack }: Endpo
               <TabsTrigger value="daily">Daily Trend</TabsTrigger>
               <TabsTrigger value="status">Status Codes</TabsTrigger>
               <TabsTrigger value="drops">Drop Frequency</TabsTrigger>
+              <TabsTrigger value="features">Related Features</TabsTrigger>
             </TabsList>
             <TabsContent value="hourly">
-              <EndpointHourlyDistribution logs={endpointLogs} />
+              <EndpointHourlyDistribution logs={endpointLogs} endpoint={endpoint} />
             </TabsContent>
             <TabsContent value="daily">
-              <EndpointDailyTrend logs={endpointLogs} />
+              <EndpointDailyTrend logs={endpointLogs} endpoint={endpoint} />
             </TabsContent>
             <TabsContent value="status">
               <div className="space-y-4">
@@ -215,7 +264,55 @@ export default function EndpointDetailedReport({ endpoint, logs, onBack }: Endpo
               </div>
             </TabsContent>
             <TabsContent value="drops">
-              <EndpointDropFrequency logs={endpointLogs} />
+              <EndpointDropFrequency logs={endpointLogs} endpoint={endpoint} />
+            </TabsContent>
+            <TabsContent value="features">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Related Features</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  These features are related to this API endpoint and may impact or be impacted by changes to this
+                  endpoint.
+                </p>
+
+                {relatedFeatures.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {relatedFeatures.map((feature, index) => (
+                      <Card key={index}>
+                        <CardHeader>
+                          <CardTitle className="text-lg">{feature.name}</CardTitle>
+                          <CardDescription>{feature.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <div>
+                              <p className="text-sm font-medium">RICE Score</p>
+                              <p className="text-lg font-bold">{feature.riceScore.toFixed(1)}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">Effort</p>
+                              <p className="text-lg font-bold">{feature.effort}/10</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-4">
+                            <Lightbulb className="h-4 w-4 text-amber-500" />
+                            <p className="text-sm">
+                              {feature.effort > 7
+                                ? "High effort feature - consider API optimization before implementation"
+                                : feature.effort > 4
+                                  ? "Medium effort feature - monitor API performance during implementation"
+                                  : "Low effort feature - minimal API impact expected"}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border rounded-md">
+                    <p>No related features found for this endpoint.</p>
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -294,6 +391,12 @@ export default function EndpointDetailedReport({ endpoint, logs, onBack }: Endpo
                   {uniqueIPs < 10 && <li>Consider promoting this API to increase usage</li>}
                   <li>Monitor this endpoint regularly to ensure consistent performance</li>
                   <li>Consider implementing rate limiting if usage patterns show potential for abuse</li>
+                  {relatedFeatures.length > 0 && (
+                    <li>
+                      Coordinate with feature teams implementing {relatedFeatures.map((f) => f.name).join(", ")} to
+                      ensure compatibility
+                    </li>
+                  )}
                 </ul>
               </CardContent>
             </Card>

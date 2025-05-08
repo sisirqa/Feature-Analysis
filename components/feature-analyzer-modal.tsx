@@ -8,6 +8,7 @@ import { Download, Loader2 } from "lucide-react"
 import RiceScoreChart from "@/components/rice-score-chart"
 import EffortImpactChart from "@/components/effort-impact-chart"
 import RiskDistributionChart from "@/components/risk-distribution-chart"
+import FeatureApiImpactAnalysis from "@/components/feature-api-impact"
 import { generatePDF } from "@/utils/pdf-generator"
 import type { FeatureData, RiskData, ComponentData, TimelineData, ChartData } from "@/types/report-types"
 
@@ -26,12 +27,40 @@ export default function FeatureAnalyzerModal({
 }: FeatureAnalyzerModalProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isAnalyzed, setIsAnalyzed] = useState(false)
+  const [activeTab, setActiveTab] = useState("summary")
 
   // Sample data for the report - in a real implementation, this would be generated from the analysis
   const features: FeatureData[] = [
-    { name: featureName, reach: 8, impact: 9, confidence: 8, effort: 7, riceScore: 8.2 },
-    { name: "Sub-feature 1", reach: 8, impact: 7, confidence: 9, effort: 5, riceScore: 10.1 },
-    { name: "Sub-feature 2", reach: 7, impact: 6, confidence: 8, effort: 4, riceScore: 8.4 },
+    {
+      id: featureId,
+      name: featureName,
+      description: featureDetails,
+      reach: 8,
+      impact: 9,
+      confidence: 8,
+      effort: 7,
+      riceScore: 8.2,
+    },
+    {
+      id: "sub1",
+      name: "Sub-feature 1",
+      description: "A component of the main feature",
+      reach: 8,
+      impact: 7,
+      confidence: 9,
+      effort: 5,
+      riceScore: 10.1,
+    },
+    {
+      id: "sub2",
+      name: "Sub-feature 2",
+      description: "Another component of the main feature",
+      reach: 7,
+      impact: 6,
+      confidence: 8,
+      effort: 4,
+      riceScore: 8.4,
+    },
   ]
 
   const chartData: ChartData[] = [
@@ -130,12 +159,13 @@ export default function FeatureAnalyzerModal({
             </Button>
           </div>
 
-          <Tabs defaultValue="summary" className="mt-6">
-            <TabsList className="grid grid-cols-4 mb-4">
+          <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="mt-6">
+            <TabsList className="grid grid-cols-5 mb-4">
               <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="features">Features</TabsTrigger>
               <TabsTrigger value="risks">Risks</TabsTrigger>
               <TabsTrigger value="impact">Impact</TabsTrigger>
+              <TabsTrigger value="api">API Impact</TabsTrigger>
             </TabsList>
 
             <TabsContent value="summary" className="space-y-4">
@@ -152,6 +182,10 @@ export default function FeatureAnalyzerModal({
                       <p className="text-sm mt-2">
                         Based on the RICE score analysis, this feature and its sub-features have high priority and
                         should be implemented according to the proposed timeline.
+                      </p>
+                      <p className="text-sm mt-2">
+                        API impact analysis shows that several endpoints will be affected by this implementation, with
+                        varying degrees of impact. Proper testing and monitoring will be essential during deployment.
                       </p>
                     </div>
                     <div className="border rounded-md p-4">
@@ -392,6 +426,10 @@ export default function FeatureAnalyzerModal({
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="api" className="space-y-4">
+              <FeatureApiImpactAnalysis feature={features[0]} />
             </TabsContent>
           </Tabs>
         </div>
